@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KitchenSync | Recipe & Grocery Optimizer</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --primary-light: #e8f5e9;
+            --secondary: #f57c00;
+            --bg: #f4f6f8;
+            --card: #ffffff;
+            --text: #333333;
+            --border: #e0e0e0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-around;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+        }
+
+        nav button {
+            flex: 1;
+            padding: 0.8rem;
+            border: none;
+            background: none;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+
+        nav button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 1rem auto;
+            padding: 0 1rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+
+        .form-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        input, select, button.btn {
+            padding: 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        input { flex: 1; }
+
+        button.btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .item-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            background: var(--primary-light);
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .recipe-card {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: white;
+        }
+
+        .recipe-card h4 { margin: 0 0 0.5rem 0; }
+        .match-badge { color: var(--primary); font-size: 0.85rem; font-weight: bold; }
+        
+        .action-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2 style="margin:0;">KitchenSync</h2>
+    <small>Recipe & Grocery Optimizer</small>
+</header>
+
+<nav>
+    <button class="nav-btn active" onclick="switchTab('pantry')">Pantry</button>
+    <button class="nav-btn" onclick="switchTab('recipes')">Recipes</button>
+    <button class="nav-btn" onclick="switchTab('grocery')">Grocery List</button>
+</nav>
+
+<div class="container">
+    <div id="pantry" class="tab-content active">
+        <div class="card">
+            <h3>Add to Pantry</h3>
+            <div class="form-group">
+                <input type="text" id="pantryInput" placeholder="e.g., Tomatoes, Rice, Milk">
+                <button class="btn btn-primary" onclick="addPantryItem()">Add</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>Current Inventory</h3>
+            <ul id="pantryList" class="item-list"></ul>
+        </div>
+    </div>
+
+    <div id="recipes" class="tab-content">
+        <div class="card">
+            <h3>Smart Recipe Suggestions</h3>
+            <p style="font-size: 0.85rem; color: #666;">Based on your current pantry inventory:</p>
+            <div id="recipeList"></div>
+        </div>
+    </div>
+
+    <div id="grocery" class="tab-content">
+        <div class="card">
+            <h3>Shopping List</h3>
+            <div class="form-group">
+                <input type="text" id="groceryInput" placeholder="Add custom item">
+                <button class="btn btn-primary" onclick="addGroceryItem()">Add</button>
+            </div>
+            <ul id="groceryList" class="item-list"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State Management
+    let state = {
+        pantry: ["Tomatoes", "Onions", "Rice", "Garlic"],
+        grocery: ["Olive Oil"],
+        recipes: [
+            { id: 1, name: "Tomato Garlic Rice", ingredients: ["Tomatoes", "Garlic", "Rice", "Olive Oil"], prep: "20 mins" },
+            { id: 2, name: "Onion & Tomato Salad", ingredients: ["Onions", "Tomatoes", "Lemon"], prep: "10 mins" },
+            { id: 3, name: "Garlic Butter Pasta", ingredients: ["Garlic", "Pasta", "Butter"], prep: "15 mins" }
+        ]
+    };
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        event.target.classList.add('active');
+
+        if(tabId === 'recipes') renderRecipes();
+    }
+
+    // Pantry Logic
+    function renderPantry() {
+        const list = document.getElementById('pantryList');
+        list.innerHTML = state.pantry.map((item, index) => `
+            <li class="item-row">
+                <span>${item}</span>
+                <button onclick="removePantry(${index})" style="border:none; background:none; color:red; cursor:pointer;">✕</button>
+            </li>
+        `).join('');
+    }
+
+    function addPantryItem() {
+        const input = document.getElementById('pantryInput');
+        if (input.value.trim()) {
+            state.pantry.push(input.value.trim());
+            input.value = '';
+            renderPantry();
+        }
+    }
+
+    function removePantry(index) {
+        state.pantry.splice(index, 1);
+        renderPantry();
+    }
+
+    // Recipe Logic
+    function renderRecipes() {
+        const container = document.getElementById('recipeList');
+        container.innerHTML = state.recipes.map(recipe => {
+            const matches = recipe.ingredients.filter(ing => 
+                state.pantry.some(p => p.toLowerCase() === ing.toLowerCase())
+            );
+            const missing = recipe.ingredients.filter(ing => 
+                !state.pantry.some(p => p.toLowerCase() === ing.toLowerCase())
+            );
+            const matchPct = Math.round((matches.length / recipe.ingredients.length) * 100);
+
+            return `
+                <div class="recipe-card">
+                    <h4>${recipe.name} <span class="tag">${recipe.prep}</span></h4>
+                    <div class="match-badge">${matchPct}% ingredients in pantry</div>
+                    <p style="font-size: 0.85rem; margin: 0.5rem 0;">
+                        <b>Have:</b> ${matches.join(', ') || 'None'}<br>
+                        <b>Missing:</b> ${missing.join(', ') || 'None'}
+                    </p>
+                    ${missing.length > 0 ? `
+                        <button class="action-btn" onclick="addMissingToGrocery(${JSON.stringify(missing).replace(/"/g, '&quot;')})">
+                            + Add Missing to Grocery List
+                        </button>
+                    ` : '<span style="color: green; font-size: 0.85rem; font-weight: bold;">Ready to cook!</span>'}
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Grocery Logic
+    function renderGrocery() {
+        const list = document.getElementById('groceryList');
+        list.innerHTML = state.grocery.map((item, index) => `
+            <li class="item-row">
+                <span>${item}</span>
+                <button onclick="removeGrocery(${index})" style="border:none; background:none; color:red; cursor:pointer;">✓</button>
+            </li>
+        `).join('');
+    }
+
+    function addGroceryItem() {
+        const input = document.getElementById('groceryInput');
+        if (input.value.trim()) {
+            state.grocery.push(input.value.trim());
+            input.value = '';
+            renderGrocery();
+        }
+    }
+
+    function addMissingToGrocery(items) {
+        items.forEach(item => {
+            if (!state.grocery.includes(item)) state.grocery.push(item);
+        });
+        renderGrocery();
+        alert('Missing items added to grocery list!');
+    }
+
+    function removeGrocery(index) {
+        state.grocery.splice(index, 1);
+        renderGrocery();
+    }
+
+    // Initial Render
+    renderPantry();
+    renderGrocery();
+</script>
+
+</body>
+</html>
